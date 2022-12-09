@@ -253,34 +253,34 @@ classdef pinSVOR < Algorithm
         
         function predicted = assignLabels(projected, thresholds)
 
-%             numClasses = size(thresholds,2)-1;
-%             project2 = repmat(projected, numClasses,1);
-%             b_j = thresholds(2:end);
-%             b_j_1 = thresholds(1:end-1);
-%             project2 = abs(project2 - ...
-%                 ((b_j+b_j_1)/2)'*ones(1,size(project2,2)));
-%             wx=project2;
-% 
-%             [~,predicted]=min(wx,[],1);
-
-            b = thresholds(2:end-1);
-            numClasses = size(b,2)+1;
-            %TEST assign the labels from projections and thresholds
-            project2 = repmat(projected, numClasses-1,1);
-            project2 = project2 - b'*ones(1,size(project2,2));
-            % Asignation of the class
-            % f(x) = max {Wx-bk<0} or Wx - b_(K-1) > 0
+            numClasses = size(thresholds,2)-1;
+            project2 = repmat(projected, numClasses,1);
+            b_j = thresholds(2:end);
+            b_j_1 = thresholds(1:end-1);
+            project2 = abs(project2 - ...
+                ((b_j+b_j_1)/2)'*ones(1,size(project2,2)));
             wx=project2;
-            % The procedure for that is the following:
-            % We assign the values > 0 to NaN
-            wx(wx(:,:)>0)=NaN;
 
-            % Then, we choose the biggest one.
-            [maximum,predicted]=max(wx,[],1);
+            [~,predicted]=min(wx,[],1);
 
-            % If a max is equal to NaN is because Wx-bk for all k is >0, so this
-            % pattern belongs to the last class.
-            predicted(isnan(maximum(:,:)))=numClasses;
+%             b = thresholds(2:end-1);
+%             numClasses = size(b,2)+1;
+%             %TEST assign the labels from projections and thresholds
+%             project2 = repmat(projected, numClasses-1,1);
+%             project2 = project2 - b'*ones(1,size(project2,2));
+%             % Asignation of the class
+%             % f(x) = max {Wx-bk<0} or Wx - b_(K-1) > 0
+%             wx=project2;
+%             % The procedure for that is the following:
+%             % We assign the values > 0 to NaN
+%             wx(wx(:,:)>0)=NaN;
+% 
+%             % Then, we choose the biggest one.
+%             [maximum,predicted]=max(wx,[],1);
+% 
+%             % If a max is equal to NaN is because Wx-bk for all k is >0, so this
+%             % pattern belongs to the last class.
+%             predicted(isnan(maximum(:,:)))=numClasses;
              
             predicted = predicted';
         end
