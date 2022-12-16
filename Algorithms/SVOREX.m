@@ -1,0 +1,102 @@
+classdef SVOREX < Algorithm
+    %SVOREX Support Vector for Ordinal Regression (Explicit constraints)
+    %   This class derives from the Algorithm Class and implements the
+    %   SVOREX method. This class uses SVOREX implementation by
+    %   W. Chu et al (http://www.gatsby.ucl.ac.uk/~chuwei/svor.htm)
+    %
+    %   SVOREX methods:
+    %      fitpredict               - runs the corresponding algorithm,
+    %                                   fitting the model and testing it in a dataset.
+    %      fit                        - Fits a model from training data
+    %      predict                    - Performs label prediction
+    %
+    %   References:
+    %     [1] P.A. Gutiérrez, M. Pérez-Ortiz, J. Sánchez-Monedero,
+    %         F. Fernández-Navarro and C. Hervás-Martínez
+    %         Ordinal regression methods: survey and experimental study
+    %         IEEE Transactions on Knowledge and Data Engineering, Vol. 28. Issue 1
+    %         2016
+    %         http://dx.doi.org/10.1109/TKDE.2015.2457911
+    %     [2] W. Chu and S. S. Keerthi, Support Vector Ordinal Regression,
+    %         Neural Computation, vol. 19, no. 3, pp. 792�?815, 2007.
+    %         http://10.1162/neco.2007.19.3.792
+    %
+    %   This file is part of ORCA: https://github.com/ayrna/orca
+    %   Original authors: Pedro Antonio Gutiérrez, María Pérez Ortiz, Javier Sánchez Monedero
+    %   Citation: If you use this code, please cite the associated paper http://www.uco.es/grupos/ayrna/orreview
+    %   Copyright:
+    %       This software is released under the The GNU General Public License v3.0 licence
+    %       available at http://www.gnu.org/licenses/gpl-3.0.html
+    
+    properties
+        description = 'Support Vector for Ordinal Regression (Explicit constraints)';        
+        parameters = struct('C', 0.1, 'k', 0.1);
+    end
+    properties (Access = private)
+        algorithmMexPath = fullfile(fileparts(which('Algorithm.m')),'SVOREX');
+    end
+    
+    methods
+        function obj = SVOREX(varargin)
+            %SVOREX constructs an object of the class SVOREX and sets its default
+            %   characteristics
+            %   OBJ = SVOREX(KERNEL) builds SVOREX with RBF as kernel function
+            obj.parseArgs(varargin);
+        end
+        
+        function [projectedTrain, predictedTrain] = privfit(obj,train,parameters)
+            %PRIVFIT trains the model for the SVOREX method with TRAIN data and
+            %vector of parameters PARAMETERS. 
+            if isempty(strfind(path,obj.algorithmMexPath))
+                addpath(obj.algorithmMexPath);
+            end
+            [alpha, thresholds, projectedTrain] = svorex([train.patterns train.targets],parameters.k,parameters.C,0,0,0);
+            predictedTrain = obj.assignLabels(projectedTrain, thresholds);
+            model.projected = alpha;
+            model.thresholds = thresholds;
+            model.parameters = parameters;
+            model.train = train.patterns;
+            obj.model = model;
+            projectedTrain = projectedTrain';
+            if ~isempty(strfind(path,obj.algorithmMexPath))
+                rmpath(obj.algorithmMexPath);
+            end
+        end
+        
+        function [projected, predicted] = privpredict(obj, test)
+            %PREDICT predicts labels of TEST patterns labels. The object needs to be fitted to the data first.
+            kernelMatrix = computeKernelMatrix(obj.model.train',test','rbf',obj.model.parameters.k);
+            projected = obj.model.projected*kernelMatrix;
+            
+            predicted = SVOREX.assignLabels(projected, obj.model.thresholds);
+            projected = projected';
+        end
+    end
+    
+    methods (Static = true)
+        function predicted = assignLabels(projected, thresholds)
+            numClasses = size(thresholds,2)+1;
+            %TEST assign the labels from projections and thresholds
+            project2 = repmat(projected, numClasses-1,1);
+            project2 = project2 - thresholds'*ones(1,size(project2,2));
+            
+            % Asignation of the class
+            % f(x) = max {Wx-bk<0} or Wx - b_(K-1) > 0
+            wx=project2;
+            
+            % The procedure for that is the following:
+            % We assign the values > 0 to NaN
+            wx(wx(:,:)>0)=NaN;
+            
+            % Then, we choose the biggest one.
+            [maximum,predicted]=max(wx,[],1);
+            
+            % If a max is equal to NaN is because Wx-bk for all k is >0, so this
+            % pattern belongs to the last class.
+            predicted(isnan(maximum(:,:)))=numClasses;
+            
+            predicted = predicted';
+        end
+    end 
+end
+
