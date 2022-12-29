@@ -20,7 +20,6 @@ classdef pinSVOR < Algorithm
         function obj = pinSVOR(varargin)
             %pinSVOR constructs an object of the class pinSVOR and sets its default
             %   characteristics
-            %   OBJ = pinSVOR builds pinSVOR
             obj.parseArgs(varargin);
         end
         
@@ -28,10 +27,6 @@ classdef pinSVOR < Algorithm
                 privfit(obj,train,parameters)
             %PRIVFIT trains the model for the pinSVOR method with TRAIN data and
             %vector of parameters PARAMETERS. 
-%             if isempty(strfind(path,obj.algorithmMexPath))
-%                 addpath(obj.algorithmMexPath);
-%             end
-            parameters.C2 = parameters.C;
             [beta, beta_star, delta, delta_star,lambda, b ,projectedTrain,projected] = ...
                 obj.pinsvor(train.patterns, train.targets,parameters.C,parameters.tau,parameters.kernel,parameters.k,parameters.C2);
             predictedTrain = obj.assignLabels(projectedTrain, b);
@@ -173,7 +168,6 @@ classdef pinSVOR < Algorithm
             threshold = 1e-8;
             opts = optimoptions('quadprog','display','off');
             x = quadprog(H,f,[],[],Aeq,beq,lb,ub,[],opts);
-%             x(x<threshold)=0;
             
             %% alpha alpha_star lambda
             beta = x(1:size(traindata,1));
