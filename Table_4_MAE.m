@@ -124,24 +124,27 @@ sound(y,Fs)
 % Create an Algorithm object
 function [bestSVOREX]= svorex_ParamOptimization(train,test)
     method = 'SVOREX';
-    algorithmObj = SVORLin();
+    algorithmObj = SVOREX();
 
     % Clear parameter struct
     clear param;
     bestMAE=100;
     for C=10.^(-3:1:3)
-       param = struct('C',C);
-       SVOR = algorithmObj.fitpredict(train,test,param);
-       mae = MAE.calculateMetric(test.targets,SVOR.predictedTest);
-       if mae <= bestMAE
-           bestMAE = mae;
-           bestParam = param;
+       for k=10.^(-3:1:3)
+           param = struct('C',C,'k',k);
+           SVOR = algorithmObj.fitpredict(train,test,param);
+           mae = MAE.calculateMetric(test.targets,SVOR.predictedTest);
+           if mae <= bestMAE
+               bestMAE = mae;
+               bestParam = param;
+           end
        end
     end
 
     % Fit the model and predict with test data
     bestSVOREX = algorithmObj.fitpredict(train,test,bestParam);
 end
+
 
 %% pinSVOR
 function [bestpinSvor]=pinsvor_ParamOptimization(train,test)
@@ -153,7 +156,7 @@ function [bestpinSvor]=pinsvor_ParamOptimization(train,test)
     % Clear parameter struct
     clear param;
     % Parameter k (kernel width) kernel = 1,linear; other wise, rbf
-    kernelType = 1;
+    kernelType = 2;
     if kernelType == 1
         kernel = 'linear';
     else
@@ -161,13 +164,15 @@ function [bestpinSvor]=pinsvor_ParamOptimization(train,test)
     end
     bestMAE=100;
     for C=10.^(-3:1:3)
-       for tau= 0.1:0.1:0.9
-           param = struct('C',C,'C2',C,'k',1,'tau',tau,'kernel',kernel);
-           pinSvor = algorithmObj.fitpredict(train,test,param);
-           mae = MAE.calculateMetric(test.targets,pinSvor.predictedTest);
-           if mae <= bestMAE
-               bestMAE = mae;
-               bestParam = param;
+       for k=10.^(-3:1:3)
+           for tau= 0.1:0.1:0.9
+               param = struct('C',C,'C2',C,'k',k,'tau',tau,'kernel',kernel);
+               pinSvor = algorithmObj.fitpredict(train,test,param);
+               mae = MAE.calculateMetric(test.targets,pinSvor.predictedTest);
+               if mae <= bestMAE
+                   bestMAE = mae;
+                   bestParam = param;
+               end
            end
        end
     end
@@ -184,21 +189,23 @@ function [bestpinSVM]=pinSVM_ParamOptimization(train,test)
     % Clear parameter struct
     clear param;
     % Parameter k (kernel width) kernel = 1,linear; other wise, rbf
-    kernelType = 1;
+    kernelType = 2;
     if kernelType == 1
         kernel = 'linear';
     else
         kernel = 'rbf';
     end
     bestMAE=100;
-    for C=10.^(-3:1:3)
-       for tau= 0.1:0.1:0.9
-           param = struct('C', C, 'k', 1,'tau',tau,'kernel',kernel);
-           pinSVM = algorithmObj.fitpredict(train,test,param);
-           mae = MAE.calculateMetric(test.targets,pinSVM.predictedTest);
-           if mae <= bestMAE
-               bestMAE = mae;
-               bestParam = param;
+    for C=10.^(-3:2:3)
+       for k=10.^(-3:2:3)
+           for tau= 0.1:0.1:0.9
+               param = struct('C', C, 'k', k,'tau',tau,'kernel',kernel);               
+               pinSVM = algorithmObj.fitpredict(train,test,param);
+               mae = MAE.calculateMetric(test.targets,pinSVM.predictedTest);
+               if mae <= bestMAE
+                   bestMAE = mae;
+                   bestParam = param;
+               end
            end
        end
     end
@@ -208,7 +215,7 @@ end
 
 %% load data
 function [train,test,sort_data,label]= load_data(path)
-    oldFolder = cd("ordinal-regression dataset");
+    cd('C:\Users\csgzzhong\Documents\MATLAB\orca-master\ordinal-regression dataset')
     cd(path);
     getfilename=ls('train*.*');
     filename = cellstr(getfilename);
@@ -229,11 +236,8 @@ function [train,test,sort_data,label]= load_data(path)
     end
 
     train.patterns = train_stock(1).Data(:,1:end-1);
-
     train.targets = train_stock(1).Data(:,end);
-
     test.patterns = test_stock(1).Data(:,1:end-1);
-
     test.targets = test_stock(1).Data(:,end);
 
     patterns = [train.patterns;test.patterns ];
@@ -248,5 +252,5 @@ function [train,test,sort_data,label]= load_data(path)
     label = sort_data(:,end);
     sort_data = sort_data(:,1:end-1);
 
-    cd (oldFolder);
+    cd('C:\Users\csgzzhong\Documents\MATLAB\orca-master\')
 end
