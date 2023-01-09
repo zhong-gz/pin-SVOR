@@ -196,8 +196,8 @@ function [bestpinSVM]=pinSVM_ParamOptimization(train,test)
         kernel = 'rbf';
     end
     bestMAE=100;
-    for C=10.^(-3:2:3)
-       for k=10.^(-3:2:3)
+    for C=10.^(-3:1:3)
+       for k=10.^(-3:1:3)
            for tau= 0.1:0.1:0.9
                param = struct('C', C, 'k', k,'tau',tau,'kernel',kernel);               
                pinSVM = algorithmObj.fitpredict(train,test,param);
