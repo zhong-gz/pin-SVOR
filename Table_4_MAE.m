@@ -215,7 +215,7 @@ end
 
 %% load data
 function [train,test,sort_data,label]= load_data(path)
-    cd('C:\Users\csgzzhong\Documents\MATLAB\orca-master\ordinal-regression dataset')
+    oldFolder = cd("ordinal-regression dataset");
     cd(path);
     getfilename=ls('train*.*');
     filename = cellstr(getfilename);
@@ -236,8 +236,11 @@ function [train,test,sort_data,label]= load_data(path)
     end
 
     train.patterns = train_stock(1).Data(:,1:end-1);
+
     train.targets = train_stock(1).Data(:,end);
+
     test.patterns = test_stock(1).Data(:,1:end-1);
+
     test.targets = test_stock(1).Data(:,end);
 
     patterns = [train.patterns;test.patterns ];
@@ -252,5 +255,5 @@ function [train,test,sort_data,label]= load_data(path)
     label = sort_data(:,end);
     sort_data = sort_data(:,1:end-1);
 
-    cd('C:\Users\csgzzhong\Documents\MATLAB\orca-master\')
+    cd (oldFolder);
 end

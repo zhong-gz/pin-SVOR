@@ -216,7 +216,7 @@ end
     
  end
     
-    %end of code
-    %biu pia
-    load splat
-    sound(y,Fs)
+%end of code
+%biu pia
+load splat
+sound(y,Fs)
