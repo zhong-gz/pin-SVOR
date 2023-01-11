@@ -10,7 +10,8 @@ str = [dataset '\matlab'];
 r = max(label);
 k=5; %kfold
 t=20; %independent run
-step=k*t*2; %waitbar
+ratio = 5;
+step=k*t*ratio*2; %waitbar
 
 kernel = 'linear'; %or 'rbf'
 
@@ -25,43 +26,71 @@ for j=1:t %t independent run
         train.targets = label(train_indic,:);
         test.patterns = data(test_indic,:);%test data and test label
         test.targets = label(test_indic,:);
+        traindata_k = train.patterns;
 
-        %waitbar
-        str=['Process:  ',num2str((count/step)*100),...
-            '% , the ',num2str(j),' th run for the '...
-            ,num2str(i),'th fold pinSVM'];
-        waitbar(count/step,wait,str);
+        for noise = 1:ratio
+            p = 0.1*(noise-1);
+            %add noise to train data
+            for class = 1:r
+                train_temp = traindata_k(train.targets==class,:);
+                m_temp = size(train_temp,1);
+                t_std = std(train_temp);
+                index = randperm(m_temp);
+                noise_number = ceil(p*m_temp);
+                noisedata = 4*t_std.*(2*rand(noise_number,n)-1);
+                train_temp_n = train_temp(index(1:noise_number),:)+noisedata;
+                train_temp(index(1:noise_number),:) = [];
+                train_temp_n = [train_temp;train_temp_n];
 
-        %pinsvm 1
-        algorithmObj = pinSVM1VA();
-        clear param;
-        param = struct('C',10,'tau',0.2,'kernel',kernel,'k',0.1);
-        model = algorithmObj.fitpredict(train,test,param);
-        trainTime(1,(j-1)*k+i) = model.trainTime;
-        testTime(1,(j-1)*k+i) = model.testTime;
-        %waitbar
-        count = count +1;
-        str=['Process:  ',num2str((count/step)*100),...
-            '% , the ',num2str(j),' th run for the '...
-            ,num2str(i),'th fold pin-SVOR'];
-        waitbar(count/step,wait,str);
+                if class ~= 1
+                    traindata = [traindata; train_temp_n];
+                    trainlabel = [trainlabel; class*ones(size(train_temp_n,1),1)];
+                else
+                    traindata = train_temp_n;
+                    trainlabel = class*ones(size(train_temp_n,1),1);
+                end
+            end
 
-        %pinsvor 2
-        algorithmObj = pinSVOR();
-        clear param;
-        param = struct('C',10,'tau',0.2,'kernel',kernel,'k',0.1); %pinsvor pinsvm
-        model = algorithmObj.fitpredict(train,test,param);
-        trainTime(2,(j-1)*k+i) = model.trainTime;
-        testTime(2,(j-1)*k+i) = model.testTime;
-        %waitbar
-        count = count +1;
+            train.patterns = traindata;
+            train.targets = trainlabel;
+
+            %waitbar
+            str=['Process:  ',num2str(fix((count/step)*100)),...
+                '% , the ',num2str(j),' th run for the '...
+                ,num2str(i),'th fold pinSVM, r = 0.',num2str(noise-1)];
+            waitbar(count/step,wait,str);
+    
+            %pinsvm 1
+            algorithmObj = pinSVM1VA();
+            clear param;
+            param = struct('C',10,'tau',0.2,'kernel',kernel,'k',0.1);
+            model = algorithmObj.fitpredict(train,test,param);
+            trainTime(noise,1,(j-1)*k+i) = model.trainTime;
+            testTime(noise,1,(j-1)*k+i) = model.testTime;
+            %waitbar
+            count = count +1;
+            str=['Process:  ',num2str(fix((count/step)*100)),...
+                '% , the ',num2str(j),' th run for the '...
+                ,num2str(i),'th fold pinSVOR, r = 0.',num2str(noise-1)];
+            waitbar(count/step,wait,str);
+    
+            %pinsvor 2
+            algorithmObj = pinSVOR();
+            clear param;
+            param = struct('C',10,'tau',0.2,'kernel',kernel,'k',0.1); %pinsvor pinsvm
+            model = algorithmObj.fitpredict(train,test,param);
+            trainTime(noise,2,(j-1)*k+i) = model.trainTime;
+            testTime(noise,2,(j-1)*k+i) = model.testTime;
+            %waitbar
+            count = count +1;
+        end
     end     
 end
 
 close(wait);
 
-mean_time = mean(trainTime,2);
-mean_test_time = mean(testTime,2);
+mean_time = mean(trainTime,3);
+mean_test_time = mean(testTime,3);
 
 fprintf('\n Dataset is %s', dataset);
 fprintf('\n %d of data in dataset', m);
@@ -69,16 +98,21 @@ fprintf('\n %d of classed in dataset', m);
 fprintf('\n')
 fprintf('\n')
 
-% Report train and test time
-fprintf('pinSVOR\n');
-fprintf('Average Train Time %f\n',mean_time(2));
-fprintf('Average Test Time %f\n',mean_test_time(2));
-fprintf('\n');
+for noise = 1:ratio
+    fprintf('\n 0.%d of data is courrpted with noise', noise-1);
+    fprintf('\n')
 
-fprintf('pinSVM\n');
-fprintf('Average Train Time %f\n',mean_time(1));
-fprintf('Average Test Time %f\n',mean_test_time(1));
-fprintf('\n');
+    % Report train and test time
+    fprintf('pinSVOR\n');
+    fprintf('Average Train Time %f\n',mean_time(noise,2));
+    fprintf('Average Test Time %f\n',mean_test_time(noise,2));
+    fprintf('\n');
+    
+    fprintf('pinSVM\n');
+    fprintf('Average Train Time %f\n',mean_time(noise,1));
+    fprintf('Average Test Time %f\n',mean_test_time(noise,1));
+    fprintf('\n');
+end
 
 %end of code
 %biu pia
