@@ -3,7 +3,7 @@
 "MATLAB Support for MinGW-w64 C/C++ Compiler" is needed to install for baslines.
 
 Can be cite as:
->@ARTICLE{10082947,
+>@ARTICLE{OrdinalRegressionWithPinballLoss,
 >
 >  author={Zhong, Guangzheng and Xiao, Yanshan and Liu, Bo and Zhao, Liang and Kong, Xiangjun},
 >
